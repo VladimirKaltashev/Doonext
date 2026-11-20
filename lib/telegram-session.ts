@@ -2,6 +2,7 @@ const encoder = new TextEncoder();
 const SESSION_COOKIE = "doonext_session";
 const STATE_COOKIE = "doonext_login_state";
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
+const LOGIN_STATE_SECONDS = 60 * 60;
 
 function toHex(bytes: Uint8Array) { return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join(""); }
 function bytesFromHex(hex: string) { return Uint8Array.from(hex.match(/.{2}/g) ?? [], part => parseInt(part, 16)); }
@@ -21,7 +22,7 @@ function cookieValue(request: Request, name: string) {
 }
 export function loginStateFromCookie(request: Request) { return cookieValue(request, STATE_COOKIE); }
 export function newLoginState() { return toHex(crypto.getRandomValues(new Uint8Array(24))); }
-export function loginStateCookie(value: string) { return `${STATE_COOKIE}=${value}; Path=/api/auth/telegram; HttpOnly; Secure; SameSite=Lax; Max-Age=600`; }
+export function loginStateCookie(value: string) { return `${STATE_COOKIE}=${value}; Path=/api/auth/telegram; HttpOnly; Secure; SameSite=Lax; Max-Age=${LOGIN_STATE_SECONDS}`; }
 export function clearLoginStateCookie() { return `${STATE_COOKIE}=; Path=/api/auth/telegram; HttpOnly; Secure; SameSite=Lax; Max-Age=0`; }
 export function clearSessionCookie() { return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`; }
 
