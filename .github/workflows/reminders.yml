@@ -16,5 +16,6 @@ jobs:
           test -n "$JOB_SECRET"
           curl --fail-with-body --silent --show-error --max-time 30 \
             --request POST \
+            --header "User-Agent: Doonext-Reminder-Check/1.0" \
             --header "Authorization: Bearer $JOB_SECRET" \
             https://telegram-zadachi-vlad-2026.vladongold.chatgpt.site/api/jobs/reminders
