@@ -2,12 +2,19 @@ import { and, eq, or } from "drizzle-orm";
 import { getDb } from "../db";
 import { tasks } from "../db/schema";
 
-export type TaskInput = { title?: unknown; dueDate?: unknown; dueTime?: unknown; estimateMinutes?: unknown; priority?: unknown; parentId?: unknown };
+export type TaskInput = { title?: unknown; dueDate?: unknown; dueTime?: unknown; estimateMinutes?: unknown; remindMinutes?: unknown; priority?: unknown; parentId?: unknown };
 
 function parseDueTime(value: unknown) {
   if (value === undefined || value === null || value === "") return null;
   if (typeof value !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error("Неверное время");
   return value;
+}
+
+function parseReminder(value: unknown) {
+  if (value === undefined || value === null || value === "") return null;
+  const minutes = Number(value);
+  if (![5, 15, 30, 60, 180, 1440].includes(minutes)) throw new Error("Неверное время напоминания");
+  return minutes;
 }
 
 function parseEstimate(value: unknown) {
@@ -29,6 +36,8 @@ export async function createTask(userId: string, input: TaskInput) {
   const dueTime = parseDueTime(input.dueTime);
   if (dueTime && !dueDate) throw new Error("Для времени выберите дату");
   const estimateMinutes = parseEstimate(input.estimateMinutes);
+  const remindMinutes = parseReminder(input.remindMinutes);
+  if (remindMinutes && !dueDate) throw new Error("Для напоминания выберите срок");
   const priority = Number(input.priority ?? 2);
   if (![0, 1, 2, 3].includes(priority)) throw new Error("Неверная важность");
   const parentId = input.parentId ? String(input.parentId) : null;
@@ -36,7 +45,7 @@ export async function createTask(userId: string, input: TaskInput) {
     const [parent] = await getDb().select().from(tasks).where(and(eq(tasks.id, parentId), eq(tasks.userId, userId)));
     if (!parent || parent.parentId) throw new Error("Главная задача не найдена");
   }
-  const [task] = await getDb().insert(tasks).values({ id: crypto.randomUUID(), userId, title, dueDate, dueTime, estimateMinutes, priority, parentId, createdAt: new Date().toISOString() }).returning();
+  const [task] = await getDb().insert(tasks).values({ id: crypto.randomUUID(), userId, title, dueDate, dueTime, estimateMinutes, remindMinutes, priority, parentId, createdAt: new Date().toISOString() }).returning();
   return task;
 }
 
@@ -59,14 +68,22 @@ export async function updateTask(userId: string, id: string, input: Record<strin
     const date = input.dueDate ? String(input.dueDate) : null;
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Неверная дата");
     changes.dueDate = date;
-    if (!date) changes.dueTime = null;
+    if (!date) { changes.dueTime = null; changes.remindMinutes = null; }
+    if (date !== old.dueDate) changes.reminderSentAt = null;
   }
   if (input.dueTime !== undefined) {
     const dueTime = parseDueTime(input.dueTime);
     if (dueTime && !(changes.dueDate !== undefined ? changes.dueDate : old.dueDate)) throw new Error("Для времени выберите дату");
     changes.dueTime = dueTime;
+    if (dueTime !== old.dueTime) changes.reminderSentAt = null;
   }
   if (input.estimateMinutes !== undefined) changes.estimateMinutes = parseEstimate(input.estimateMinutes);
+  if (input.remindMinutes !== undefined) {
+    const remindMinutes = parseReminder(input.remindMinutes);
+    if (remindMinutes && !(changes.dueDate !== undefined ? changes.dueDate : old.dueDate)) throw new Error("Для напоминания выберите срок");
+    changes.remindMinutes = remindMinutes;
+    if (remindMinutes !== old.remindMinutes) changes.reminderSentAt = null;
+  }
   if (input.priority !== undefined) {
     const priority = Number(input.priority);
     if (![0, 1, 2, 3].includes(priority)) throw new Error("Неверная важность");

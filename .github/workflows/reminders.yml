@@ -1,0 +1,20 @@
+name: Send deadline reminders
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process reminders
+        env:
+          JOB_SECRET: ${{ secrets.DOONEXT_REMINDER_JOB_SECRET }}
+        run: |
+          test -n "$JOB_SECRET"
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            --request POST \
+            --header "Authorization: Bearer $JOB_SECRET" \
+            https://telegram-zadachi-vlad-2026.vladongold.chatgpt.site/api/jobs/reminders

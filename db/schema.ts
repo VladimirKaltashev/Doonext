@@ -7,6 +7,8 @@ export const tasks = sqliteTable("tasks", {
   dueDate: text("due_date"),
   dueTime: text("due_time"),
   estimateMinutes: integer("estimate_minutes"),
+  remindMinutes: integer("remind_minutes"),
+  reminderSentAt: text("reminder_sent_at"),
   priority: integer("priority").notNull().default(2),
   parentId: text("parent_id"),
   completed: integer("completed", { mode: "boolean" }).notNull().default(false),
