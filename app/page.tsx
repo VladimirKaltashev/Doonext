@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, History, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, History, LogOut, Plus, X } from "lucide-react";
 import { DateChoice } from "../components/date-choice";
 import { CompletionHeatmap } from "../components/completion-heatmap";
 import { TelegramLogin } from "../components/telegram-login";
 
-type TelegramWebApp = { initData: string; ready: () => void; expand: () => void; showConfirm?: (message: string, callback: (confirmed: boolean) => void) => void };
+type TelegramWebApp = { initData: string; ready: () => void; expand: () => void };
 declare global { interface Window { Telegram?: { WebApp: TelegramWebApp } } }
 const telegramHeaders = () => ({ "x-telegram-init-data": window.Telegram?.WebApp?.initData ?? "" });
 
@@ -48,6 +48,7 @@ export default function Home() {
   const [parentId, setParentId] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/tasks", { cache: "no-store", headers: telegramHeaders() });
@@ -59,8 +60,8 @@ export default function Home() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { window.Telegram?.WebApp?.ready(); window.Telegram?.WebApp?.expand(); void refresh(); }, [refresh]);
-  const openNew = (parent = "") => { setEditing(null); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setPriority(2); setParentId(parent); setDialog(true); };
-  const openEdit = (task: Task) => { setEditing(task); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setPriority(task.priority); setParentId(task.parentId ?? ""); setDialog(true); };
+  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setPriority(2); setParentId(parent); setDialog(true); };
+  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setPriority(task.priority); setParentId(task.parentId ?? ""); setDialog(true); };
   const save = async (event: React.FormEvent) => {
     event.preventDefault(); if (!title.trim()) return; setSaving(true);
     try {
@@ -72,10 +73,6 @@ export default function Home() {
   };
   const remove = async () => {
     if (!editing) return;
-    const count = tasks.filter(task => task.parentId === editing.id).length;
-    const prompt = count ? `Удалить задачу и ${count} подзадач?` : "Удалить задачу навсегда?";
-    const confirmed = window.Telegram?.WebApp?.showConfirm ? await new Promise<boolean>(resolve => window.Telegram!.WebApp.showConfirm!(prompt, resolve)) : window.confirm(prompt);
-    if (!confirmed) return;
     setDeleting(true);
     try {
       const response = await fetch(`/api/tasks/${editing.id}`, { method: "DELETE", headers: telegramHeaders() });
@@ -164,7 +161,7 @@ export default function Home() {
   };
   return <div className="app-shell">
     <main className="content">
-      {!signin && <header className="page-header"><h1>{view === "tasks" ? "Задачи" : "История"}</h1><div className="header-actions">{view === "tasks" && canImport && <button className="secondary-button" onClick={() => setImportDialog(true)}>Перенести</button>}<button className="secondary-button icon-button history-button" aria-label={view === "tasks" ? "История" : "Назад к задачам"} title={view === "tasks" ? "История" : "Назад к задачам"} onClick={() => setView(view === "tasks" ? "history" : "tasks")}>{view === "tasks" ? <History size={19}/> : <ArrowLeft size={19}/>}</button>{view === "tasks" && <button className="primary-button icon-button" aria-label="Добавить задачу" title="Добавить задачу" onClick={() => openNew()}><Plus size={20}/></button>}{typeof window !== "undefined" && !window.Telegram?.WebApp?.initData && <button className="secondary-button quiet-button" onClick={async () => { await fetch("/api/auth/telegram/logout", { method: "POST" }); void refresh(); }}>Выйти</button>}</div></header>}
+      {!signin && <header className="page-header"><button className="primary-button header-add-button" onClick={() => { setView("tasks"); openNew(); }}><Plus size={19}/> Добавить задачу</button><div className="header-actions"><button className="secondary-button icon-button history-button" aria-label={view === "tasks" ? "История" : "Назад к задачам"} title={view === "tasks" ? "История" : "Назад к задачам"} onClick={() => setView(view === "tasks" ? "history" : "tasks")}>{view === "tasks" ? <History size={19}/> : <ArrowLeft size={19}/>}</button>{typeof window !== "undefined" && !window.Telegram?.WebApp?.initData && <button className="secondary-button icon-button" aria-label="Выйти" title="Выйти" onClick={async () => { await fetch("/api/auth/telegram/logout", { method: "POST" }); void refresh(); }}><LogOut size={19}/></button>}</div></header>}
       {error && <div className="error">{error}<button onClick={() => setError("")}><X size={14}/></button></div>}
       {signin ? <TelegramLogin/> :
       loading ? <div className="empty">Загрузка…</div> : view === "history" ? <div className="task-list">
@@ -175,6 +172,7 @@ export default function Home() {
         {buckets.filter(b => b.items.length).map(bucket => <section className="bucket" key={bucket.name}><h2 className={bucket.tone}>{bucket.name}</h2><div className="bucket-body">{bucket.items.map(t => row(t))}</div></section>)}
         {!visible.length && !done.length && <div className="empty">Нет задач</div>}
         {done.length > 0 && <section className="bucket completed-bucket"><h2>Выполнено</h2><div className="bucket-body">{done.map(t => row(t))}</div></section>}
+        {canImport && <button className="secondary-button import-button" onClick={() => setImportDialog(true)}>Перенести</button>}
       </div>}
     </main>
     {dialog && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setDialog(false); }}>
@@ -188,7 +186,7 @@ export default function Home() {
         <label>Важность<select value={priority} onChange={e => setPriority(Number(e.target.value))}><option value={0}>Срочно</option><option value={1}>Высокая</option><option value={2}>Обычная</option><option value={3}>Низкая</option></select></label>
         {!editing && !parentId && roots.length > 0 && <label>Главная задача<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Нет — отдельная задача</option>{roots.filter(t => !t.completed).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select></label>}
         <button className="primary-button submit" disabled={saving}>{saving ? "Сохраняем…" : editing ? "Сохранить" : "Добавить задачу"}</button>
-        {editing && <button type="button" className="delete-button" disabled={deleting} onClick={() => void remove()}>{deleting ? "Удаляем…" : "Удалить задачу"}</button>}
+        {editing && (confirmDelete ? <div className="delete-confirm"><span>{tasks.some(task => task.parentId === editing.id) ? "Удалить задачу вместе с подзадачами?" : "Удалить задачу навсегда?"}</span><div className="delete-confirm-actions"><button type="button" className="secondary-button" disabled={deleting} onClick={() => setConfirmDelete(false)}>Отмена</button><button type="button" className="delete-confirm-button" disabled={deleting} onClick={() => void remove()}>{deleting ? "Удаляем…" : "Удалить"}</button></div></div> : <button type="button" className="delete-button" onClick={() => setConfirmDelete(true)}>Удалить задачу</button>)}
       </form>
     </div>}
     {importDialog && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setImportDialog(false); }}>

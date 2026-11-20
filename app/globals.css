@@ -10,6 +10,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .content{width:min(100% - 40px,760px);margin:0 auto;padding:56px 0 96px}
 .page-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:42px}
 .header-actions{display:flex;align-items:center;gap:8px}
+.header-add-button{min-height:44px;padding:11px 17px;font-size:15px}
 h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .primary-button{border:0;background:#202020;color:#fff;border-radius:7px;padding:10px 15px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:600;white-space:nowrap}
 .primary-button:hover{background:#454545}
@@ -18,6 +19,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .quiet-button{padding:7px 9px;font-size:12px;font-weight:500;color:#777}
 .icon-button{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .history-button{color:#777}
+.import-button{margin-top:24px}
 .bucket{margin:0 0 29px}
 .bucket h2{font-size:13px;font-weight:700;color:#757575;margin:0 0 10px}
 .bucket h2.late{color:#b65a4c}
@@ -89,9 +91,13 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .calendar-grid button.selected{background:#202020;color:#fff}
 .delete-button{display:block;margin:12px auto 0;border:0;background:none;color:#b64737;font-size:13px;padding:10px 16px}
 .delete-button:disabled{opacity:.5}
+.delete-confirm{margin-top:16px;padding:14px;border:1px solid #e5c2bc;border-radius:7px;color:#8d3528;font-size:13px}
+.delete-confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.delete-confirm-button{border:0;background:#b64737;color:#fff;border-radius:7px;padding:9px 14px;font-size:14px;font-weight:600}
+.delete-confirm-button:disabled{opacity:.5}
 .submit{width:100%;margin-top:24px}
 .submit:disabled{opacity:.5}
-@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;flex-wrap:wrap;gap:13px}.header-actions{margin-left:auto;gap:8px}.header-actions .secondary-button,.header-actions .primary-button{min-height:42px}.header-actions .quiet-button{min-height:34px}.header-actions .icon-button{width:42px;height:42px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
+@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;gap:10px}.header-actions{margin-left:auto;gap:8px}.header-actions .icon-button{width:42px;height:42px}.header-add-button{min-height:42px;padding:10px 13px;font-size:14px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
 
 .login-box { display: flex; min-height: 60vh; align-items: center; justify-content: center; flex-direction: column; gap: 28px; text-align: center; }
 .login-box h1 { font-size: 32px; font-weight: 700; margin: 0; }
