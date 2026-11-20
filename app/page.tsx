@@ -18,7 +18,13 @@ const deadlineKey = (task: Task) => task.dueDate ? `${task.dueDate}T${task.dueTi
 const sortTasks = (a: Task, b: Task) => (deadlineKey(a) ?? "9999").localeCompare(deadlineKey(b) ?? "9999") || a.priority - b.priority || a.createdAt.localeCompare(b.createdAt);
 const estimateText = (minutes: number) => minutes <= 30 ? "до 30 мин" : minutes <= 60 ? "до 1 ч" : minutes <= 120 ? "до 2 ч" : "больше 2 ч";
 const estimateGroup = (minutes: number) => minutes <= 30 ? 20 : minutes <= 60 ? 60 : minutes <= 120 ? 120 : 180;
-const urgency = (priority: number, dueDate: string | null, tomorrowKey: string) => priority === 0 ? 0 : dueDate && dueDate <= tomorrowKey ? priority === 3 ? 1 : 0 : priority;
+const urgency = (task: Task, tomorrowKey: string) => {
+  if (task.priority === 0) return 0;
+  if (!task.dueDate || task.dueDate > tomorrowKey) return task.priority;
+  if (task.priority === 1 && task.parentId) return 0;
+  if (task.priority === 3) return 1;
+  return task.priority;
+};
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -112,7 +118,7 @@ export default function Home() {
   const currentTime = `${String(clock.getHours()).padStart(2, "0")}:${String(clock.getMinutes()).padStart(2, "0")}`;
   const isOverdue = (task: Task) => { const key = effectiveKey(task); if (!key) return false; const date = key.slice(0,10); const time = key.slice(11); return date < current || (date === current && time !== "99:99" && time < currentTime); };
   const effectiveDate = (task: Task) => effectiveKey(task)?.slice(0,10) ?? null;
-  const shownPriority = (task: Task) => urgency(task.priority, effectiveDate(task), tomorrow);
+  const shownPriority = (task: Task) => urgency(task, tomorrow);
   const visible = active;
   const urgent = visible.filter(t => shownPriority(t) === 0 && !isOverdue(t));
   const buckets = [
@@ -158,7 +164,7 @@ export default function Home() {
   };
   return <div className="app-shell">
     <main className="content">
-      {!signin && <header className="page-header"><h1>{view === "tasks" ? "Задачи" : "История"}</h1><div className="header-actions">{view === "tasks" && canImport && <button className="secondary-button" onClick={() => setImportDialog(true)}>Перенести</button>}<button className="secondary-button" onClick={() => setView(view === "tasks" ? "history" : "tasks")}>{view === "tasks" ? "История" : "Задачи"}</button>{view === "tasks" && <button className="primary-button" onClick={() => openNew()}><Plus size={18}/> Добавить</button>}{typeof window !== "undefined" && !window.Telegram?.WebApp?.initData && <button className="secondary-button" onClick={async () => { await fetch("/api/auth/telegram/logout", { method: "POST" }); void refresh(); }}>Выйти</button>}</div></header>}
+      {!signin && <header className="page-header"><h1>{view === "tasks" ? "Задачи" : "История"}</h1><div className="header-actions">{view === "tasks" && canImport && <button className="secondary-button" onClick={() => setImportDialog(true)}>Перенести</button>}<button className="secondary-button quiet-button" onClick={() => setView(view === "tasks" ? "history" : "tasks")}>{view === "tasks" ? "История" : "Задачи"}</button>{view === "tasks" && <button className="primary-button" onClick={() => openNew()}><Plus size={18}/> Добавить</button>}{typeof window !== "undefined" && !window.Telegram?.WebApp?.initData && <button className="secondary-button quiet-button" onClick={async () => { await fetch("/api/auth/telegram/logout", { method: "POST" }); void refresh(); }}>Выйти</button>}</div></header>}
       {error && <div className="error">{error}<button onClick={() => setError("")}><X size={14}/></button></div>}
       {signin ? <TelegramLogin/> :
       loading ? <div className="empty">Загрузка…</div> : view === "history" ? <div className="task-list">
