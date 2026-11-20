@@ -16,6 +16,8 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .secondary-button{border:1px solid #ddd;background:#fff;color:#444;border-radius:7px;padding:9px 14px;font-size:14px;font-weight:600}
 .secondary-button:hover{background:#f6f6f6}
 .quiet-button{padding:7px 9px;font-size:12px;font-weight:500;color:#777}
+.icon-button{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.history-button{color:#777}
 .bucket{margin:0 0 29px}
 .bucket h2{font-size:13px;font-weight:700;color:#757575;margin:0 0 10px}
 .bucket h2.late{color:#b65a4c}
@@ -89,7 +91,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .delete-button:disabled{opacity:.5}
 .submit{width:100%;margin-top:24px}
 .submit:disabled{opacity:.5}
-@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;flex-wrap:wrap;gap:13px}.header-actions{width:100%;gap:8px}.header-actions .secondary-button,.header-actions .primary-button{flex:1;min-height:42px}.header-actions .quiet-button{flex:0 0 auto;min-height:34px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
+@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;flex-wrap:wrap;gap:13px}.header-actions{margin-left:auto;gap:8px}.header-actions .secondary-button,.header-actions .primary-button{min-height:42px}.header-actions .quiet-button{min-height:34px}.header-actions .icon-button{width:42px;height:42px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
 
 .login-box { display: flex; min-height: 60vh; align-items: center; justify-content: center; flex-direction: column; gap: 28px; text-align: center; }
 .login-box h1 { font-size: 32px; font-weight: 700; margin: 0; }

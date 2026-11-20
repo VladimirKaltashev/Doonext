@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, History, Plus, X } from "lucide-react";
 import { DateChoice } from "../components/date-choice";
 import { CompletionHeatmap } from "../components/completion-heatmap";
 import { TelegramLogin } from "../components/telegram-login";
@@ -164,7 +164,7 @@ export default function Home() {
   };
   return <div className="app-shell">
     <main className="content">
-      {!signin && <header className="page-header"><h1>{view === "tasks" ? "Задачи" : "История"}</h1><div className="header-actions">{view === "tasks" && canImport && <button className="secondary-button" onClick={() => setImportDialog(true)}>Перенести</button>}<button className="secondary-button quiet-button" onClick={() => setView(view === "tasks" ? "history" : "tasks")}>{view === "tasks" ? "История" : "Задачи"}</button>{view === "tasks" && <button className="primary-button" onClick={() => openNew()}><Plus size={18}/> Добавить</button>}{typeof window !== "undefined" && !window.Telegram?.WebApp?.initData && <button className="secondary-button quiet-button" onClick={async () => { await fetch("/api/auth/telegram/logout", { method: "POST" }); void refresh(); }}>Выйти</button>}</div></header>}
+      {!signin && <header className="page-header"><h1>{view === "tasks" ? "Задачи" : "История"}</h1><div className="header-actions">{view === "tasks" && canImport && <button className="secondary-button" onClick={() => setImportDialog(true)}>Перенести</button>}<button className="secondary-button icon-button history-button" aria-label={view === "tasks" ? "История" : "Назад к задачам"} title={view === "tasks" ? "История" : "Назад к задачам"} onClick={() => setView(view === "tasks" ? "history" : "tasks")}>{view === "tasks" ? <History size={19}/> : <ArrowLeft size={19}/>}</button>{view === "tasks" && <button className="primary-button icon-button" aria-label="Добавить задачу" title="Добавить задачу" onClick={() => openNew()}><Plus size={20}/></button>}{typeof window !== "undefined" && !window.Telegram?.WebApp?.initData && <button className="secondary-button quiet-button" onClick={async () => { await fetch("/api/auth/telegram/logout", { method: "POST" }); void refresh(); }}>Выйти</button>}</div></header>}
       {error && <div className="error">{error}<button onClick={() => setError("")}><X size={14}/></button></div>}
       {signin ? <TelegramLogin/> :
       loading ? <div className="empty">Загрузка…</div> : view === "history" ? <div className="task-list">
