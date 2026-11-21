@@ -4,7 +4,7 @@ Doonext is a Telegram Mini App for keeping tasks in deadline order, choosing pri
 
 ## What it does
 
-- Tasks and subtasks with dates, optional time, priority, estimated duration, and Telegram reminders
+- Tasks and subtasks with dates, optional time, priority, estimated duration, and Telegram reminders at a chosen time or before a deadline
 - Today, upcoming, and completed views with a completion heatmap
 - Read-only deadline summary in the bot
 - One-time migration from the earlier task site
@@ -36,4 +36,4 @@ The current bot URL and webhook Mini App URL are set in `app/api/telegram/webhoo
 
 In @BotFather, select the bot and use `/setdomain` with `telegram-zadachi-vlad-2026.vladongold.chatgpt.site` for the Telegram Login Widget. A browser session uses a signed, HttpOnly cookie; the Mini App continues to use signed Telegram `initData`. Both resolve to the same Telegram user ID and D1 records.
 
-The reminder selector appears after choosing a due date. A date without a time is treated as 23:59 in Europe/Moscow. The bot must have an open chat with the user before it can send messages. GitHub Actions calls `/api/jobs/reminders` every five minutes; set the repository secret `DOONEXT_REMINDER_JOB_SECRET` to the same value as the hosting secret `REMINDER_JOB_SECRET`. The endpoint rejects requests without that secret. Scheduled GitHub jobs can be delayed, so reminders are approximate.
+You can set a Telegram reminder on any new or existing task, even without a deadline. Choose a quick time, pick a date and time, or (when a deadline exists) remind before the deadline. Reminder times are interpreted in Europe/Moscow. A deadline without a time is treated as 23:59. The bot must have an open chat with the user before it can send messages. GitHub Actions calls `/api/jobs/reminders` approximately every five minutes; set the repository secret `DOONEXT_REMINDER_JOB_SECRET` to the same value as the hosting secret `REMINDER_JOB_SECRET`. The endpoint rejects requests without that secret. GitHub can delay or drop scheduled jobs, so delivery is approximate.

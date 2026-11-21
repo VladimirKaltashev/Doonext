@@ -7,12 +7,12 @@ const key = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1)
 const plusDays = (days: number) => { const date = new Date(); date.setDate(date.getDate() + days); return key(date); };
 const plusMonth = () => { const now = new Date(); const last = new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate(); return key(new Date(now.getFullYear(), now.getMonth() + 1, Math.min(now.getDate(), last))); };
 
-export function DateChoice({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function DateChoice({ value, onChange, allowNone = true }: { value: string; onChange: (value: string) => void; allowNone?: boolean }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => value ? new Date(`${value}T12:00:00`) : new Date());
   const quick = [
     ["Сегодня", plusDays(0)], ["Завтра", plusDays(1)], ["Неделя", plusDays(7)],
-    ["Месяц", plusMonth()], ["Без срока", ""],
+    ["Месяц", plusMonth()], ...(allowNone ? [["Без срока", ""]] : []),
   ];
   const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
   const offset = (monthStart.getDay() + 6) % 7;

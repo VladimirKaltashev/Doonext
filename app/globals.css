@@ -79,6 +79,13 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .date-options button:hover,.estimate-options button:hover{background:#f4f4f4}
 .date-options button.selected,.estimate-options button.selected{background:#202020;border-color:#202020;color:#fff}
 .estimate-field{margin-top:17px}
+.reminder-field{margin-top:17px}
+.reminder-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.reminder-options button{border:1px solid #ddd;border-radius:7px;background:#fff;color:#555;font-size:12px;padding:10px 6px;min-height:40px}
+.reminder-options button:hover{background:#f4f4f4}
+.reminder-options button.selected{background:#202020;border-color:#202020;color:#fff}
+.reminder-custom{margin-top:10px}
+.reminder-before{margin-top:10px}
 .calendar-panel{border:1px solid #e5e5e5;border-radius:8px;padding:10px;margin-top:9px}
 .calendar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;text-transform:capitalize;font-size:13px}
 .calendar-top button{border:0;background:none;display:grid;place-items:center;width:36px;height:36px;border-radius:5px}
@@ -97,7 +104,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .delete-confirm-button:disabled{opacity:.5}
 .submit{width:100%;margin-top:24px}
 .submit:disabled{opacity:.5}
-@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;gap:10px}.header-actions{margin-left:auto;gap:8px}.header-actions .icon-button{width:42px;height:42px}.header-add-button{min-height:42px;padding:10px 13px;font-size:14px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
+@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;gap:10px}.header-actions{margin-left:auto;gap:8px}.header-actions .icon-button{width:42px;height:42px}.header-add-button{min-height:42px;padding:10px 13px;font-size:14px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options,.reminder-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
 
 .login-box { display: flex; min-height: 60vh; align-items: center; justify-content: center; flex-direction: column; gap: 28px; text-align: center; }
 .login-box h1 { font-size: 32px; font-weight: 700; margin: 0; }

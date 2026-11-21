@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, History, LogOut, Plus, X } from "lucide-react";
 import { DateChoice } from "../components/date-choice";
+import { ReminderChoice } from "../components/reminder-choice";
 import { CompletionHeatmap } from "../components/completion-heatmap";
 import { TelegramLogin } from "../components/telegram-login";
 
@@ -10,10 +11,19 @@ type TelegramWebApp = { initData: string; ready: () => void; expand: () => void 
 declare global { interface Window { Telegram?: { WebApp: TelegramWebApp } } }
 const telegramHeaders = () => ({ "x-telegram-init-data": window.Telegram?.WebApp?.initData ?? "" });
 
-type Task = { id: string; title: string; dueDate: string | null; dueTime: string | null; estimateMinutes: number | null; remindMinutes: number | null; priority: number; parentId: string | null; completed: boolean; completedAt: string | null; inProgress: boolean; createdAt: string };
+type Task = { id: string; title: string; dueDate: string | null; dueTime: string | null; estimateMinutes: number | null; remindMinutes: number | null; remindAt: string | null; reminderSentAt: string | null; priority: number; parentId: string | null; completed: boolean; completedAt: string | null; inProgress: boolean; createdAt: string };
 const dateKey = (d: Date) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
 const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return dateKey(d); };
 const niceDate = (value: string) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date(value + "T12:00:00"));
+const reminderLabel = (task: Task) => {
+  if (task.reminderSentAt) return "Напомнили";
+  if (task.remindAt) {
+    const local = new Date(Date.parse(task.remindAt) + 3 * 60 * 60_000).toISOString();
+    return `Напомнить ${niceDate(local.slice(0, 10))} · ${local.slice(11, 16)}`;
+  }
+  if (task.remindMinutes) return `Напомнить за ${task.remindMinutes >= 1440 ? "день" : task.remindMinutes >= 60 ? `${task.remindMinutes / 60} ч` : `${task.remindMinutes} мин`}`;
+  return "";
+};
 const deadlineKey = (task: Task) => task.dueDate ? `${task.dueDate}T${task.dueTime ?? "99:99"}` : null;
 const sortTasks = (a: Task, b: Task) => (deadlineKey(a) ?? "9999").localeCompare(deadlineKey(b) ?? "9999") || a.priority - b.priority || a.createdAt.localeCompare(b.createdAt);
 const estimateText = (minutes: number) => minutes <= 30 ? "до 30 мин" : minutes <= 60 ? "до 1 ч" : minutes <= 120 ? "до 2 ч" : "больше 2 ч";
@@ -44,6 +54,7 @@ export default function Home() {
   const [dueTime, setDueTime] = useState("");
   const [estimateMinutes, setEstimateMinutes] = useState("");
   const [remindMinutes, setRemindMinutes] = useState("");
+  const [remindAt, setRemindAt] = useState("");
   const [priority, setPriority] = useState(2);
   const [parentId, setParentId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -60,12 +71,12 @@ export default function Home() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { window.Telegram?.WebApp?.ready(); window.Telegram?.WebApp?.expand(); void refresh(); }, [refresh]);
-  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setPriority(2); setParentId(parent); setDialog(true); };
-  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setPriority(task.priority); setParentId(task.parentId ?? ""); setDialog(true); };
+  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setRemindAt(""); setPriority(2); setParentId(parent); setDialog(true); };
+  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setPriority(task.priority); setParentId(task.parentId ?? ""); setDialog(true); };
   const save = async (event: React.FormEvent) => {
     event.preventDefault(); if (!title.trim()) return; setSaving(true);
     try {
-      const response = await fetch(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json", ...telegramHeaders() }, body: JSON.stringify({ title, dueDate: dueDate || null, dueTime: dueDate && dueTime ? dueTime : null, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : null, remindMinutes: dueDate && remindMinutes ? Number(remindMinutes) : null, priority, ...(editing ? {} : { parentId: parentId || null }) }) });
+      const response = await fetch(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json", ...telegramHeaders() }, body: JSON.stringify({ title, dueDate: dueDate || null, dueTime: dueDate && dueTime ? dueTime : null, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : null, remindMinutes: dueDate && remindMinutes ? Number(remindMinutes) : null, remindAt: remindAt || null, priority, ...(editing ? {} : { parentId: parentId || null }) }) });
       const data = await response.json() as { error?: string }; if (!response.ok) throw new Error(data.error);
       setDialog(false); await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Не удалось сохранить"); }
@@ -148,7 +159,7 @@ export default function Home() {
           {task.dueDate && <span className={isOverdue(task) && !task.completed ? "overdue" : ""}>{niceDate(task.dueDate)}{task.dueTime ? ` · до ${task.dueTime}` : ""}</span>}
           {!task.dueDate && !child && effectiveKey(task) && <span>подзадача: {niceDate(effectiveKey(task)!.slice(0,10))}{effectiveKey(task)!.slice(11) !== "99:99" ? ` · до ${effectiveKey(task)!.slice(11)}` : ""}</span>}
           {task.estimateMinutes && <span>{estimateText(task.estimateMinutes)}</span>}
-          {task.remindMinutes && !task.completed && <span>Напомнить за {task.remindMinutes >= 1440 ? "день" : task.remindMinutes >= 60 ? `${task.remindMinutes / 60} ч` : `${task.remindMinutes} мин`}</span>}
+          {(task.remindAt || task.remindMinutes) && !task.completed && <span>{reminderLabel(task)}</span>}
           {!task.completed && shownPriority(task) === 0 && <span className="urgent-label">Срочно</span>}
           {!task.completed && shownPriority(task) === 1 && <span className="high">Важно</span>}
           {sub.length > 0 && <span>{sub.filter(t => t.completed).length}/{sub.length} подзадач</span>}
@@ -181,7 +192,7 @@ export default function Home() {
         <label>Название<input autoFocus value={title} onChange={e => setTitle(e.target.value)} maxLength={240} required/></label>
         <div className="date-field"><div className="field-label">Срок</div><DateChoice key={editing?.id ?? "new"} value={dueDate} onChange={value => { setDueDate(value); if (!value) { setDueTime(""); setRemindMinutes(""); } }}/></div>
         {dueDate && <label>До какого времени<input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}/></label>}
-        {dueDate && <label>Напомнить<select value={remindMinutes} onChange={e => setRemindMinutes(e.target.value)}><option value="">Не напоминать</option><option value="5">За 5 минут</option><option value="15">За 15 минут</option><option value="30">За 30 минут</option><option value="60">За 1 час</option><option value="180">За 3 часа</option><option value="1440">За 1 день</option></select></label>}
+        <ReminderChoice key={editing?.id ?? "new"} remindAt={remindAt} remindMinutes={remindMinutes} dueDate={dueDate} onChange={(at, minutes) => { setRemindAt(at); setRemindMinutes(minutes); }}/>
         <div className="estimate-field"><div className="field-label">Примерно займёт</div><div className="estimate-options">{[["До 30 мин", 20], ["До 1 ч", 60], ["До 2 ч", 120], ["Больше 2 ч", 180], ["Не указывать", 0]].map(([label, value]) => <button type="button" key={label} className={(estimateMinutes ? estimateGroup(Number(estimateMinutes)) : 0) === value ? "selected" : ""} onClick={() => setEstimateMinutes(value ? String(value) : "")}>{label}</button>)}</div></div>
         <label>Важность<select value={priority} onChange={e => setPriority(Number(e.target.value))}><option value={0}>Срочно</option><option value={1}>Высокая</option><option value={2}>Обычная</option><option value={3}>Низкая</option></select></label>
         {!editing && !parentId && roots.length > 0 && <label>Главная задача<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Нет — отдельная задача</option>{roots.filter(t => !t.completed).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select></label>}
