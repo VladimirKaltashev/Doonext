@@ -37,6 +37,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .task-meta{display:flex;flex-wrap:wrap;gap:4px 12px;color:#949494;font-size:12px}
 .task-meta .overdue{color:#b65a4c}
 .task-meta .high{color:#a46a27}
+.task-meta .low{color:#999}
 .task-meta .urgent-label{color:#b64737;font-weight:700}
 .focus-button{border:1px solid #ddd;border-radius:5px;background:#fff;color:#777;padding:5px 8px;font-size:11px;white-space:nowrap}
 .focus-button:hover{border-color:#777;color:#333}
@@ -66,10 +67,11 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .error button{border:0;background:none;color:inherit}
 .modal-backdrop{position:fixed;inset:0;background:#0007;display:grid;place-items:center;padding:16px;z-index:5}
 .modal{width:min(100%,440px);max-height:calc(100dvh - 32px);overflow-y:auto;background:#fff;border-radius:10px;padding:25px;box-shadow:0 18px 60px #0003}
-.modal-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:22px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
 .modal-eyebrow{display:none}
 .modal h2{font-size:20px;margin:0;letter-spacing:-.4px}
-.close{border:0;background:none;color:#777;padding:0}
+.close{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;border-radius:8px;background:none;color:#777;padding:0}
+.close:hover{background:#f5f5f5;color:#333}
 .modal label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:600;margin-top:17px}
 .modal input,.modal select{width:100%;background:#fff;border:1px solid #d4d4d4;border-radius:6px;padding:10px 11px;color:#222;font-size:14px}
 .date-field{margin-top:17px}
@@ -79,6 +81,14 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .date-options button:hover,.estimate-options button:hover{background:#f4f4f4}
 .date-options button.selected,.estimate-options button.selected{background:#202020;border-color:#202020;color:#fff}
 .estimate-field{margin-top:17px}
+.importance-field{margin-top:17px}
+.importance-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.importance-options button{border:1px solid #ddd;border-radius:7px;background:#fff;color:#555;font-size:13px;padding:10px 6px;min-height:40px}
+.importance-options button.selected{background:#202020;border-color:#202020;color:#fff}
+.importance-options button:hover:not(.selected){background:#f4f4f4}
+.modal .urgent-control{display:flex;flex-direction:row;align-items:center;gap:9px;margin-top:12px;font-size:13px;font-weight:500}
+.modal .urgent-control input{width:18px;height:18px;margin:0;padding:0;accent-color:#202020}
+.urgency-note{margin-top:7px;color:#a46a27;font-size:12px}
 .reminder-field{margin-top:17px}
 .reminder-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .reminder-options button{border:1px solid #ddd;border-radius:7px;background:#fff;color:#555;font-size:12px;padding:10px 6px;min-height:40px}
@@ -107,6 +117,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .submit:disabled{opacity:.5}
 @media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;gap:10px}.header-actions{margin-left:auto;gap:8px}.header-actions .icon-button{width:42px;height:42px}.header-add-button{min-height:42px;padding:10px 13px;font-size:14px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options,.reminder-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
 @media(max-width:560px){
+  .modal input,.modal select{font-size:16px}
   .modal-head{margin-bottom:14px}
   .modal label,.date-field{margin-top:12px}
   .date-options{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:3px}
