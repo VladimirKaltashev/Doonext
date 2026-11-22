@@ -18,11 +18,11 @@ export function reminderTime(task: Pick<ReminderTask, "dueDate" | "dueTime" | "r
   return { deadline, sendAt: deadline - task.remindMinutes * 60_000 };
 }
 
-export async function processReminders(now = new Date()) {
+export async function processReminders(now = new Date(), userId?: string) {
   const token = env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error("Telegram bot token is not configured");
   const db = getDb();
-  const pending = await db.select().from(tasks).where(and(eq(tasks.completed, false), isNull(tasks.reminderSentAt), or(isNotNull(tasks.remindAt), and(isNotNull(tasks.dueDate), isNotNull(tasks.remindMinutes)))));
+  const pending = await db.select().from(tasks).where(and(eq(tasks.completed, false), isNull(tasks.reminderSentAt), or(isNotNull(tasks.remindAt), and(isNotNull(tasks.dueDate), isNotNull(tasks.remindMinutes))), userId ? eq(tasks.userId, userId) : undefined));
   let sent = 0;
   let failed = 0;
   for (const task of pending) {

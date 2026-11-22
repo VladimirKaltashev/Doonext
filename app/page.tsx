@@ -67,7 +67,25 @@ export default function Home() {
     } catch (e) { setError(e instanceof Error ? e.message : "Не удалось загрузить задачи"); }
     finally { setLoading(false); }
   }, []);
-  useEffect(() => { window.Telegram?.WebApp?.ready(); window.Telegram?.WebApp?.expand(); void refresh(); }, [refresh]);
+  useEffect(() => {
+    window.Telegram?.WebApp?.ready(); window.Telegram?.WebApp?.expand();
+    void refresh();
+    let checking = false;
+    const checkReminders = async () => {
+      if (checking || document.visibilityState === "hidden") return;
+      checking = true;
+      try {
+        const response = await fetch("/api/reminders/check", { method: "POST", headers: telegramHeaders() });
+        if (response.ok && ((await response.json()) as { sent: number }).sent > 0) await refresh();
+      } catch { /* Retry when the page is opened or checked again. */ }
+      finally { checking = false; }
+    };
+    void checkReminders();
+    const interval = window.setInterval(() => void checkReminders(), 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") void checkReminders(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); };
+  }, [refresh]);
   const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setShowAdvanced(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setRemindAt(""); setImportance(2); setManualUrgent(false); setParentId(parent); setDialog(true); };
   const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setShowAdvanced(Boolean(task.estimateMinutes || task.priority !== 2)); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setImportance(importanceOf(task)); setManualUrgent(task.priority === 0); setParentId(task.parentId ?? ""); setDialog(true); };
   const save = async (event: React.FormEvent) => {
