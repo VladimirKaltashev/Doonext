@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { DateChoice } from "./date-choice";
 
 type Mode = "none" | "soon" | "hour" | "today" | "tomorrow" | "custom" | "before";
@@ -28,6 +29,9 @@ export function ReminderChoice({ remindAt, remindMinutes, dueDate, onChange }: {
   const [customDate, setCustomDate] = useState(initial.slice(0, 10));
   const [customTime, setCustomTime] = useState(initial.slice(11, 16));
   const todayAvailable = moscowParts(new Date().toISOString()).slice(11, 16) < "23:59";
+  const [expanded, setExpanded] = useState(Boolean(remindAt || remindMinutes));
+  const summary = remindAt ? `${moscowParts(remindAt).slice(0, 10)} · ${moscowParts(remindAt).slice(11, 16)}`
+    : remindMinutes ? `За ${remindMinutes === "1440" ? "день" : Number(remindMinutes) >= 60 ? `${Number(remindMinutes) / 60} ч` : `${remindMinutes} мин`} до срока` : "Выключено";
 
   useEffect(() => {
     if (!dueDate && mode === "before") { setMode("none"); onChange("", ""); }
@@ -53,8 +57,10 @@ export function ReminderChoice({ remindAt, remindMinutes, dueDate, onChange }: {
     if (next === "before") onChange("", remindMinutes || "60");
   };
 
-  return <div className="reminder-field">
-    <div className="field-label">Напомнить в Telegram</div>
+  return <div className="reminder-field" data-open={expanded}>
+    <div className="field-label reminder-desktop-label">Напомнить в Telegram</div>
+    <button type="button" className="reminder-mobile-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}><span>Напомнить</span><span className="reminder-toggle-value">{summary}</span><ChevronDown size={16}/></button>
+    <div className="reminder-body">
     <div className="reminder-options">
       {([[
         "Не нужно", "none"], ["Через 15 мин", "soon"], ["Через час", "hour"],
@@ -64,5 +70,6 @@ export function ReminderChoice({ remindAt, remindMinutes, dueDate, onChange }: {
     </div>
     {(mode === "today" || mode === "tomorrow" || mode === "custom") && <div className="reminder-custom">{mode === "custom" && <DateChoice value={customDate} onChange={date => { setCustomDate(date); exact(date, customTime); }} allowNone={false}/>}<label>Во сколько<input type="time" value={customTime} onChange={event => { setCustomTime(event.target.value); exact(customDate, event.target.value); }}/></label></div>}
     {mode === "before" && dueDate && <select className="reminder-before" aria-label="За сколько до срока напомнить" value={remindMinutes || "60"} onChange={event => onChange("", event.target.value)}><option value="5">За 5 минут</option><option value="15">За 15 минут</option><option value="30">За 30 минут</option><option value="60">За 1 час</option><option value="180">За 3 часа</option><option value="1440">За 1 день</option></select>}
+    </div>
   </div>;
 }

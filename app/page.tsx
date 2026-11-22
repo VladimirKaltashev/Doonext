@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, History, LogOut, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, History, LogOut, Plus, X } from "lucide-react";
 import { DateChoice } from "../components/date-choice";
 import { ReminderChoice } from "../components/reminder-choice";
 import { CompletionHeatmap } from "../components/completion-heatmap";
@@ -60,6 +60,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/tasks", { cache: "no-store", headers: telegramHeaders() });
@@ -71,8 +72,8 @@ export default function Home() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { window.Telegram?.WebApp?.ready(); window.Telegram?.WebApp?.expand(); void refresh(); }, [refresh]);
-  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setRemindAt(""); setPriority(2); setParentId(parent); setDialog(true); };
-  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setPriority(task.priority); setParentId(task.parentId ?? ""); setDialog(true); };
+  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setShowAdvanced(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setRemindAt(""); setPriority(2); setParentId(parent); setDialog(true); };
+  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setShowAdvanced(Boolean(task.estimateMinutes || task.priority !== 2)); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setPriority(task.priority); setParentId(task.parentId ?? ""); setDialog(true); };
   const save = async (event: React.FormEvent) => {
     event.preventDefault(); if (!title.trim()) return; setSaving(true);
     try {
@@ -193,9 +194,12 @@ export default function Home() {
         <div className="date-field"><div className="field-label">Срок</div><DateChoice key={editing?.id ?? "new"} value={dueDate} onChange={value => { setDueDate(value); if (!value) { setDueTime(""); setRemindMinutes(""); } }}/></div>
         {dueDate && <label>До какого времени<input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}/></label>}
         <ReminderChoice key={editing?.id ?? "new"} remindAt={remindAt} remindMinutes={remindMinutes} dueDate={dueDate} onChange={(at, minutes) => { setRemindAt(at); setRemindMinutes(minutes); }}/>
-        <div className="estimate-field"><div className="field-label">Примерно займёт</div><div className="estimate-options">{[["До 30 мин", 20], ["До 1 ч", 60], ["До 2 ч", 120], ["Больше 2 ч", 180], ["Не указывать", 0]].map(([label, value]) => <button type="button" key={label} className={(estimateMinutes ? estimateGroup(Number(estimateMinutes)) : 0) === value ? "selected" : ""} onClick={() => setEstimateMinutes(value ? String(value) : "")}>{label}</button>)}</div></div>
-        <label>Важность<select value={priority} onChange={e => setPriority(Number(e.target.value))}><option value={0}>Срочно</option><option value={1}>Высокая</option><option value={2}>Обычная</option><option value={3}>Низкая</option></select></label>
-        {!editing && !parentId && roots.length > 0 && <label>Главная задача<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Нет — отдельная задача</option>{roots.filter(t => !t.completed).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select></label>}
+        <button type="button" className="mobile-advanced-toggle" aria-expanded={showAdvanced} onClick={() => setShowAdvanced(!showAdvanced)}>Ещё <ChevronDown size={17}/></button>
+        <div className="advanced-fields" data-open={showAdvanced}>
+          <div className="estimate-field"><div className="field-label">Примерно займёт</div><div className="estimate-options">{[["До 30 мин", 20], ["До 1 ч", 60], ["До 2 ч", 120], ["Больше 2 ч", 180], ["Не указывать", 0]].map(([label, value]) => <button type="button" key={label} className={(estimateMinutes ? estimateGroup(Number(estimateMinutes)) : 0) === value ? "selected" : ""} onClick={() => setEstimateMinutes(value ? String(value) : "")}>{label}</button>)}</div></div>
+          <label>Важность<select value={priority} onChange={e => setPriority(Number(e.target.value))}><option value={0}>Срочно</option><option value={1}>Высокая</option><option value={2}>Обычная</option><option value={3}>Низкая</option></select></label>
+          {!editing && !parentId && roots.length > 0 && <label>Главная задача<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Нет — отдельная задача</option>{roots.filter(t => !t.completed).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select></label>}
+        </div>
         <button className="primary-button submit" disabled={saving}>{saving ? "Сохраняем…" : editing ? "Сохранить" : "Добавить задачу"}</button>
         {editing && (confirmDelete ? <div className="delete-confirm"><span>{tasks.some(task => task.parentId === editing.id) ? "Удалить задачу вместе с подзадачами?" : "Удалить задачу навсегда?"}</span><div className="delete-confirm-actions"><button type="button" className="secondary-button" disabled={deleting} onClick={() => setConfirmDelete(false)}>Отмена</button><button type="button" className="delete-confirm-button" disabled={deleting} onClick={() => void remove()}>{deleting ? "Удаляем…" : "Удалить"}</button></div></div> : <button type="button" className="delete-button" onClick={() => setConfirmDelete(true)}>Удалить задачу</button>)}
       </form>
