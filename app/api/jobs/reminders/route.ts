@@ -8,9 +8,10 @@ function sameSecret(received: string, expected: string) {
 }
 
 export async function POST(request: Request) {
-  const secret = env.REMINDER_JOB_SECRET;
   const supplied = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
-  if (!secret || !sameSecret(supplied, secret)) return new Response(null, { status: 403 });
+  const authorized = [env.REMINDER_JOB_SECRET, env.SCHEDULER_JOB_SECRET]
+    .some((secret) => !!secret && sameSecret(supplied, secret));
+  if (!authorized) return new Response(null, { status: 403 });
   try { return Response.json(await processReminders()); }
   catch { return Response.json({ error: "Не удалось обработать напоминания" }, { status: 500 }); }
 }
