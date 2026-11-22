@@ -27,7 +27,8 @@ export async function processReminders(now = new Date()) {
   let failed = 0;
   for (const task of pending) {
     const time = reminderTime(task);
-    if (!time || now.getTime() < time.sendAt || (time.deadline !== null && now.getTime() >= time.deadline)) continue;
+    // A delayed scheduler should still deliver recent reminders instead of silently losing them.
+    if (!time || now.getTime() < time.sendAt || now.getTime() - time.sendAt > 24 * 60 * 60_000) continue;
     const claimedAt = now.toISOString();
     const unchangedReminder = task.remindAt
       ? eq(tasks.remindAt, task.remindAt)
@@ -39,8 +40,11 @@ export async function processReminders(now = new Date()) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: task.userId.replace(/^tg:/, ""), text: task.remindAt ? `Напоминание: ${task.title}${task.dueDate ? `\nСрок: ${task.dueDate}${task.dueTime ? `, ${task.dueTime}` : ""}` : ""}\n${APP_URL}` : `Скоро срок: ${task.title}\nДо ${task.dueDate}${task.dueTime ? `, ${task.dueTime}` : ""}\n${APP_URL}` }),
       });
-      const result = await response.json() as { ok?: boolean };
-      if (!response.ok || !result.ok) throw new Error("Telegram delivery failed");
+      const result = await response.json() as { ok?: boolean; description?: string };
+      if (!response.ok || !result.ok) {
+        console.error("Reminder delivery failed", { taskId: task.id, status: response.status, reason: result.description });
+        throw new Error("Telegram delivery failed");
+      }
       sent++;
     } catch {
       failed++;
