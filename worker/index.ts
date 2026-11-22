@@ -1,6 +1,5 @@
 import handler from "vinext/server/fetch-handler";
 import { runWithConnectorBinding } from "../lib/connector-context";
-import { processReminders } from "../lib/reminders";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
 
 const worker = {
@@ -25,11 +24,6 @@ const worker = {
       };
     }
     return runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx));
-  },
-  scheduled(_controller: ScheduledController, _env: Cloudflare.Env, ctx: ExecutionContext) {
-    ctx.waitUntil(processReminders().then(result => {
-      if (result.sent || result.failed) console.log("Reminder run", result);
-    }));
   },
 };
 
