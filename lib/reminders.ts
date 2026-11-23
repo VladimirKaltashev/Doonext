@@ -6,6 +6,16 @@ import { tasks } from "../db/schema";
 export type ReminderTask = typeof tasks.$inferSelect;
 const APP_URL = "https://telegram-zadachi-vlad-2026.vladongold.chatgpt.site/";
 
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
+
+function deadlineLabel(task: ReminderTask, now: Date) {
+  if (!task.dueDate) return null;
+  const date = new Date(`${task.dueDate}T12:00:00+03:00`);
+  const formatter = new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow", day: "numeric", month: "long" });
+  const year = task.dueDate.slice(0, 4) === new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Moscow", year: "numeric" }).format(now) ? "" : ` ${task.dueDate.slice(0, 4)}`;
+  return `${formatter.format(date)}${year}${task.dueTime ? `, ${task.dueTime}` : ""}`;
+}
+
 // The current app displays times in the owner's Moscow timezone.
 export function reminderTime(task: Pick<ReminderTask, "dueDate" | "dueTime" | "remindMinutes" | "remindAt">) {
   if (task.remindAt) {
@@ -36,9 +46,16 @@ export async function processReminders(now = new Date(), userId?: string) {
     const [claimed] = await db.update(tasks).set({ reminderSentAt: claimedAt }).where(and(eq(tasks.id, task.id), eq(tasks.completed, false), isNull(tasks.reminderSentAt), unchangedReminder)).returning({ id: tasks.id });
     if (!claimed) continue;
     try {
+      const deadline = deadlineLabel(task, now);
+      const text = `${task.remindAt ? "⏰ Напоминание" : "⏳ Скоро срок"}\n\n<b>${escapeHtml(task.title)}</b>${deadline ? `\nСрок: ${deadline}` : ""}`;
       const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: task.userId.replace(/^tg:/, ""), text: task.remindAt ? `Напоминание: ${task.title}${task.dueDate ? `\nСрок: ${task.dueDate}${task.dueTime ? `, ${task.dueTime}` : ""}` : ""}\n${APP_URL}` : `Скоро срок: ${task.title}\nДо ${task.dueDate}${task.dueTime ? `, ${task.dueTime}` : ""}\n${APP_URL}` }),
+        body: JSON.stringify({
+          chat_id: task.userId.replace(/^tg:/, ""),
+          text,
+          parse_mode: "HTML",
+          reply_markup: { inline_keyboard: [[{ text: "Открыть задачи", web_app: { url: APP_URL } }]] },
+        }),
       });
       const result = await response.json() as { ok?: boolean; description?: string };
       if (!response.ok || !result.ok) {

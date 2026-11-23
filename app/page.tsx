@@ -16,7 +16,6 @@ const dateKey = (d: Date) => [d.getFullYear(), String(d.getMonth() + 1).padStart
 const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return dateKey(d); };
 const niceDate = (value: string) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date(value + "T12:00:00"));
 const reminderLabel = (task: Task) => {
-  if (task.reminderSentAt) return "Напомнили";
   if (task.remindAt) {
     const local = new Date(Date.parse(task.remindAt) + 3 * 60 * 60_000).toISOString();
     return `Напомнить ${niceDate(local.slice(0, 10))} · ${local.slice(11, 16)}`;
@@ -173,7 +172,7 @@ export default function Home() {
           {task.dueDate && <span className={isOverdue(task) && !task.completed ? "overdue" : ""}>{niceDate(task.dueDate)}{task.dueTime ? ` · до ${task.dueTime}` : ""}</span>}
           {!task.dueDate && !child && effectiveKey(task) && <span>подзадача: {niceDate(effectiveKey(task)!.slice(0,10))}{effectiveKey(task)!.slice(11) !== "99:99" ? ` · до ${effectiveKey(task)!.slice(11)}` : ""}</span>}
           {task.estimateMinutes && <span>{estimateText(task.estimateMinutes)}</span>}
-          {(task.remindAt || task.remindMinutes) && !task.completed && <span>{reminderLabel(task)}</span>}
+          {(task.remindAt || task.remindMinutes) && !task.reminderSentAt && !task.completed && <span>{reminderLabel(task)}</span>}
           {!task.completed && importanceOf(task) === 1 && <span className="high">Важная</span>}
           {!task.completed && importanceOf(task) === 3 && <span className="low">Низкая</span>}
           {!task.completed && isUrgent(task, tomorrow) && <span className="urgent-label">Срочно</span>}
