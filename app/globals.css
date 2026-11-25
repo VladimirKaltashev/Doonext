@@ -76,11 +76,10 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .modal input,.modal select{width:100%;background:#fff;border:1px solid #d4d4d4;border-radius:6px;padding:10px 11px;color:#222;font-size:14px}
 .date-field{margin-top:17px}
 .field-label{font-size:13px;font-weight:600;margin-bottom:8px}
-.date-options,.estimate-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-.date-options button,.estimate-options button{border:1px solid #ddd;border-radius:7px;background:#fff;color:#555;font-size:12px;padding:10px 6px;min-height:40px}
-.date-options button:hover,.estimate-options button:hover{background:#f4f4f4}
-.date-options button.selected,.estimate-options button.selected{background:#202020;border-color:#202020;color:#fff}
-.estimate-field{margin-top:17px}
+.date-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.date-options button{border:1px solid #ddd;border-radius:7px;background:#fff;color:#555;font-size:12px;padding:10px 6px;min-height:40px}
+.date-options button:hover{background:#f4f4f4}
+.date-options button.selected{background:#202020;border-color:#202020;color:#fff}
 .importance-field{margin-top:17px}
 .importance-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .importance-options button{border:1px solid #ddd;border-radius:7px;background:#fff;color:#555;font-size:13px;padding:10px 6px;min-height:40px}
@@ -105,8 +104,9 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .calendar-grid .weekday{color:#999;font-size:11px;padding:7px 0}
 .calendar-grid button{height:38px;border:0;border-radius:6px;background:#fff;font-size:13px}
 .calendar-grid button:hover{background:#f2f2f2}
-.calendar-grid button.today{font-weight:700}
+.calendar-grid button.today{background:#ededed;box-shadow:inset 0 0 0 2px #202020;font-weight:800}
 .calendar-grid button.selected{background:#202020;color:#fff}
+.calendar-grid button.today.selected{box-shadow:none;outline:2px solid #202020;outline-offset:2px}
 .delete-button{display:block;margin:12px auto 0;border:0;background:none;color:#b64737;font-size:13px;padding:10px 16px}
 .delete-button:disabled{opacity:.5}
 .delete-confirm{margin-top:16px;padding:14px;border:1px solid #e5c2bc;border-radius:7px;color:#8d3528;font-size:13px}
@@ -115,14 +115,12 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-1px;font-weight:700;margin:0}
 .delete-confirm-button:disabled{opacity:.5}
 .submit{width:100%;margin-top:24px}
 .submit:disabled{opacity:.5}
-@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;gap:10px}.header-actions{margin-left:auto;gap:8px}.header-actions .icon-button{width:42px;height:42px}.header-add-button{min-height:42px;padding:10px 13px;font-size:14px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.estimate-options,.reminder-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
+@media(max-width:560px){.content{width:min(100% - 28px,760px);padding-top:calc(25px + env(safe-area-inset-top));padding-bottom:calc(55px + env(safe-area-inset-bottom))}.page-header{margin-bottom:26px;gap:10px}.header-actions{margin-left:auto;gap:8px}.header-actions .icon-button{width:42px;height:42px}.header-add-button{min-height:42px;padding:10px 13px;font-size:14px}h1{font-size:25px}.task-row{gap:10px;align-items:flex-start}.task-main{display:block}.task-meta{margin-top:3px}.focus-button{font-size:10px;padding:6px;align-self:center}.modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);border-radius:14px 14px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -12px 42px #0002}.date-options,.reminder-options{grid-template-columns:repeat(2,minmax(0,1fr))}.heatmap-grid{grid-template-rows:repeat(7,15px);grid-auto-columns:15px;gap:4px}}
 @media(max-width:560px){
   .modal input,.modal select{font-size:16px}
   .modal-head{margin-bottom:14px}
   .modal label,.date-field{margin-top:12px}
-  .date-options{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:3px}
-  .date-options::-webkit-scrollbar{display:none}
-  .date-options button{flex:0 0 auto;min-width:82px;padding-inline:10px}
+  .date-options{grid-template-columns:repeat(2,minmax(0,1fr))}
   .reminder-field{margin-top:14px;border-top:1px solid #ececec;padding-top:12px}
   .reminder-desktop-label{display:none}
   .reminder-mobile-toggle,.mobile-advanced-toggle{display:flex;width:100%;align-items:center;gap:9px;border:0;background:#fff;padding:7px 0;color:#333;font-size:14px;font-weight:600;text-align:left}

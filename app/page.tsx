@@ -11,7 +11,7 @@ type TelegramWebApp = { initData: string; ready: () => void; expand: () => void 
 declare global { interface Window { Telegram?: { WebApp: TelegramWebApp } } }
 const telegramHeaders = () => ({ "x-telegram-init-data": window.Telegram?.WebApp?.initData ?? "" });
 
-type Task = { id: string; title: string; dueDate: string | null; dueTime: string | null; estimateMinutes: number | null; remindMinutes: number | null; remindAt: string | null; reminderSentAt: string | null; priority: number; parentId: string | null; completed: boolean; completedAt: string | null; inProgress: boolean; createdAt: string };
+type Task = { id: string; title: string; dueDate: string | null; dueTime: string | null; remindMinutes: number | null; remindAt: string | null; reminderSentAt: string | null; priority: number; parentId: string | null; completed: boolean; completedAt: string | null; inProgress: boolean; createdAt: string };
 const dateKey = (d: Date) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
 const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return dateKey(d); };
 const niceDate = (value: string) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date(value + "T12:00:00"));
@@ -25,8 +25,6 @@ const reminderLabel = (task: Task) => {
 };
 const deadlineKey = (task: Task) => task.dueDate ? `${task.dueDate}T${task.dueTime ?? "99:99"}` : null;
 const sortTasks = (a: Task, b: Task) => (deadlineKey(a) ?? "9999").localeCompare(deadlineKey(b) ?? "9999") || a.priority - b.priority || a.createdAt.localeCompare(b.createdAt);
-const estimateText = (minutes: number) => minutes <= 30 ? "до 30 мин" : minutes <= 60 ? "до 1 ч" : minutes <= 120 ? "до 2 ч" : "больше 2 ч";
-const estimateGroup = (minutes: number) => minutes <= 30 ? 20 : minutes <= 60 ? 60 : minutes <= 120 ? 120 : 180;
 const importanceOf = (task: Task) => task.priority === 0 ? 1 : task.priority;
 const isUrgent = (task: Task, tomorrowKey: string) => task.priority === 0 || Boolean(task.parentId && task.priority === 1 && task.dueDate && task.dueDate <= tomorrowKey);
 
@@ -46,7 +44,6 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
-  const [estimateMinutes, setEstimateMinutes] = useState("");
   const [remindMinutes, setRemindMinutes] = useState("");
   const [remindAt, setRemindAt] = useState("");
   const [importance, setImportance] = useState(2);
@@ -85,12 +82,12 @@ export default function Home() {
     document.addEventListener("visibilitychange", onVisible);
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); };
   }, [refresh]);
-  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setShowAdvanced(false); setTitle(""); setDueDate(""); setDueTime(""); setEstimateMinutes(""); setRemindMinutes(""); setRemindAt(""); setImportance(2); setManualUrgent(false); setParentId(parent); setDialog(true); };
-  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setShowAdvanced(Boolean(task.estimateMinutes || task.priority !== 2)); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setEstimateMinutes(task.estimateMinutes?.toString() ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setImportance(importanceOf(task)); setManualUrgent(task.priority === 0); setParentId(task.parentId ?? ""); setDialog(true); };
+  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setShowAdvanced(false); setTitle(""); setDueDate(""); setDueTime(""); setRemindMinutes(""); setRemindAt(""); setImportance(2); setManualUrgent(false); setParentId(parent); setDialog(true); };
+  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setShowAdvanced(task.priority !== 2); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setImportance(importanceOf(task)); setManualUrgent(task.priority === 0); setParentId(task.parentId ?? ""); setDialog(true); };
   const save = async (event: React.FormEvent) => {
     event.preventDefault(); if (!title.trim()) return; setSaving(true);
     try {
-      const response = await fetch(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json", ...telegramHeaders() }, body: JSON.stringify({ title, dueDate: dueDate || null, dueTime: dueDate && dueTime ? dueTime : null, estimateMinutes: estimateMinutes ? Number(estimateMinutes) : null, remindMinutes: dueDate && remindMinutes ? Number(remindMinutes) : null, remindAt: remindAt || null, priority: manualUrgent && importance === 1 ? 0 : importance, ...(editing ? {} : { parentId: parentId || null }) }) });
+      const response = await fetch(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json", ...telegramHeaders() }, body: JSON.stringify({ title, dueDate: dueDate || null, dueTime: dueDate && dueTime ? dueTime : null, remindMinutes: dueDate && remindMinutes ? Number(remindMinutes) : null, remindAt: remindAt || null, priority: manualUrgent && importance === 1 ? 0 : importance, ...(editing ? {} : { parentId: parentId || null }) }) });
       const data = await response.json() as { error?: string }; if (!response.ok) throw new Error(data.error);
       setDialog(false); await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Не удалось сохранить"); }
@@ -171,7 +168,6 @@ export default function Home() {
         <button className="task-main" onClick={() => openEdit(task)}><span className="task-title">{task.title}</span><span className="task-meta">
           {task.dueDate && <span className={isOverdue(task) && !task.completed ? "overdue" : ""}>{niceDate(task.dueDate)}{task.dueTime ? ` · до ${task.dueTime}` : ""}</span>}
           {!task.dueDate && !child && effectiveKey(task) && <span>подзадача: {niceDate(effectiveKey(task)!.slice(0,10))}{effectiveKey(task)!.slice(11) !== "99:99" ? ` · до ${effectiveKey(task)!.slice(11)}` : ""}</span>}
-          {task.estimateMinutes && <span>{estimateText(task.estimateMinutes)}</span>}
           {(task.remindAt || task.remindMinutes) && !task.reminderSentAt && !task.completed && <span>{reminderLabel(task)}</span>}
           {!task.completed && importanceOf(task) === 1 && <span className="high">Важная</span>}
           {!task.completed && importanceOf(task) === 3 && <span className="low">Низкая</span>}
@@ -210,7 +206,6 @@ export default function Home() {
         <button type="button" className="mobile-advanced-toggle" aria-expanded={showAdvanced} onClick={() => setShowAdvanced(!showAdvanced)}>Важность · {importance === 1 ? "Важная" : importance === 3 ? "Низкая" : "Обычная"}{manualUrgent && " · Срочно"} <ChevronDown size={17}/></button>
         <div className="advanced-fields" data-open={showAdvanced}>
           <div className="importance-field"><div className="field-label">Важность</div><div className="importance-options">{[["Низкая", 3], ["Обычная", 2], ["Важная", 1]].map(([label, value]) => <button type="button" key={label} className={importance === value ? "selected" : ""} onClick={() => { setImportance(Number(value)); if (value !== 1) setManualUrgent(false); }}>{label}</button>)}</div>{importance === 1 && <label className="urgent-control"><input type="checkbox" checked={manualUrgent} onChange={e => setManualUrgent(e.target.checked)}/> Срочно вручную</label>}{importance === 1 && parentId && dueDate && dueDate <= tomorrow && <div className="urgency-note">Срочно из-за близкого срока подзадачи</div>}</div>
-          <div className="estimate-field"><div className="field-label">Примерно займёт</div><div className="estimate-options">{[["До 30 мин", 20], ["До 1 ч", 60], ["До 2 ч", 120], ["Больше 2 ч", 180], ["Не указывать", 0]].map(([label, value]) => <button type="button" key={label} className={(estimateMinutes ? estimateGroup(Number(estimateMinutes)) : 0) === value ? "selected" : ""} onClick={() => setEstimateMinutes(value ? String(value) : "")}>{label}</button>)}</div></div>
           {!editing && !parentId && roots.length > 0 && <label>Главная задача<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Нет — отдельная задача</option>{roots.filter(t => !t.completed).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select></label>}
         </div>
         <button className="primary-button submit" disabled={saving}>{saving ? "Сохраняем…" : editing ? "Сохранить" : "Добавить задачу"}</button>
