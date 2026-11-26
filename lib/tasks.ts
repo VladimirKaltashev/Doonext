@@ -1,6 +1,6 @@
 import { and, eq, or } from "drizzle-orm";
 import { getDb } from "../db";
-import { tasks } from "../db/schema";
+import { reminderSettings, tasks } from "../db/schema";
 
 export type TaskInput = { title?: unknown; dueDate?: unknown; dueTime?: unknown; estimateMinutes?: unknown; remindMinutes?: unknown; remindAt?: unknown; priority?: unknown; parentId?: unknown };
 
@@ -104,6 +104,10 @@ export async function updateTask(userId: string, id: string, input: Record<strin
     const priority = Number(input.priority);
     if (![0, 1, 2, 3].includes(priority)) throw new Error("Неверная важность");
     changes.priority = priority;
+  }
+  if (old.remindAt && ((changes.dueDate !== undefined && changes.dueDate !== old.dueDate) || (changes.dueTime !== undefined && changes.dueTime !== old.dueTime))) {
+    const [globalSetting] = await getDb().select({ userId: reminderSettings.userId }).from(reminderSettings).where(eq(reminderSettings.userId, userId));
+    if (globalSetting) changes.reminderSentAt = null;
   }
   if (!Object.keys(changes).length) return old;
   const [task] = await getDb().update(tasks).set(changes).where(and(eq(tasks.id, id), eq(tasks.userId, userId))).returning();

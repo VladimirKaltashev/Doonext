@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, ChevronDown, History, LogOut, Plus, X } from "lucide-react";
 import { DateChoice } from "../components/date-choice";
-import { ReminderChoice } from "../components/reminder-choice";
 import { CompletionHeatmap } from "../components/completion-heatmap";
 import { TelegramLogin } from "../components/telegram-login";
 
@@ -11,18 +10,10 @@ type TelegramWebApp = { initData: string; ready: () => void; expand: () => void 
 declare global { interface Window { Telegram?: { WebApp: TelegramWebApp } } }
 const telegramHeaders = () => ({ "x-telegram-init-data": window.Telegram?.WebApp?.initData ?? "" });
 
-type Task = { id: string; title: string; dueDate: string | null; dueTime: string | null; remindMinutes: number | null; remindAt: string | null; reminderSentAt: string | null; priority: number; parentId: string | null; completed: boolean; completedAt: string | null; inProgress: boolean; createdAt: string };
+type Task = { id: string; title: string; dueDate: string | null; dueTime: string | null; priority: number; parentId: string | null; completed: boolean; completedAt: string | null; inProgress: boolean; createdAt: string };
 const dateKey = (d: Date) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
 const addDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return dateKey(d); };
 const niceDate = (value: string) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date(value + "T12:00:00"));
-const reminderLabel = (task: Task) => {
-  if (task.remindAt) {
-    const local = new Date(Date.parse(task.remindAt) + 3 * 60 * 60_000).toISOString();
-    return `Напомнить ${niceDate(local.slice(0, 10))} · ${local.slice(11, 16)}`;
-  }
-  if (task.remindMinutes) return `Напомнить за ${task.remindMinutes >= 1440 ? "день" : task.remindMinutes >= 60 ? `${task.remindMinutes / 60} ч` : `${task.remindMinutes} мин`}`;
-  return "";
-};
 const deadlineKey = (task: Task) => task.dueDate ? `${task.dueDate}T${task.dueTime ?? "99:99"}` : null;
 const sortTasks = (a: Task, b: Task) => (deadlineKey(a) ?? "9999").localeCompare(deadlineKey(b) ?? "9999") || a.priority - b.priority || a.createdAt.localeCompare(b.createdAt);
 const importanceOf = (task: Task) => task.priority === 0 ? 1 : task.priority;
@@ -44,8 +35,6 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
-  const [remindMinutes, setRemindMinutes] = useState("");
-  const [remindAt, setRemindAt] = useState("");
   const [importance, setImportance] = useState(2);
   const [manualUrgent, setManualUrgent] = useState(false);
   const [parentId, setParentId] = useState("");
@@ -82,12 +71,12 @@ export default function Home() {
     document.addEventListener("visibilitychange", onVisible);
     return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); };
   }, [refresh]);
-  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setShowAdvanced(false); setTitle(""); setDueDate(""); setDueTime(""); setRemindMinutes(""); setRemindAt(""); setImportance(2); setManualUrgent(false); setParentId(parent); setDialog(true); };
-  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setShowAdvanced(task.priority !== 2); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setRemindMinutes(task.remindMinutes?.toString() ?? ""); setRemindAt(task.remindAt ?? ""); setImportance(importanceOf(task)); setManualUrgent(task.priority === 0); setParentId(task.parentId ?? ""); setDialog(true); };
+  const openNew = (parent = "") => { setEditing(null); setConfirmDelete(false); setShowAdvanced(false); setTitle(""); setDueDate(""); setDueTime(""); setImportance(2); setManualUrgent(false); setParentId(parent); setDialog(true); };
+  const openEdit = (task: Task) => { setEditing(task); setConfirmDelete(false); setShowAdvanced(task.priority !== 2); setTitle(task.title); setDueDate(task.dueDate ?? ""); setDueTime(task.dueTime ?? ""); setImportance(importanceOf(task)); setManualUrgent(task.priority === 0); setParentId(task.parentId ?? ""); setDialog(true); };
   const save = async (event: React.FormEvent) => {
     event.preventDefault(); if (!title.trim()) return; setSaving(true);
     try {
-      const response = await fetch(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json", ...telegramHeaders() }, body: JSON.stringify({ title, dueDate: dueDate || null, dueTime: dueDate && dueTime ? dueTime : null, remindMinutes: dueDate && remindMinutes ? Number(remindMinutes) : null, remindAt: remindAt || null, priority: manualUrgent && importance === 1 ? 0 : importance, ...(editing ? {} : { parentId: parentId || null }) }) });
+      const response = await fetch(editing ? `/api/tasks/${editing.id}` : "/api/tasks", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json", ...telegramHeaders() }, body: JSON.stringify({ title, dueDate: dueDate || null, dueTime: dueDate && dueTime ? dueTime : null, priority: manualUrgent && importance === 1 ? 0 : importance, ...(editing ? {} : { parentId: parentId || null }) }) });
       const data = await response.json() as { error?: string }; if (!response.ok) throw new Error(data.error);
       setDialog(false); await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Не удалось сохранить"); }
@@ -168,7 +157,6 @@ export default function Home() {
         <button className="task-main" onClick={() => openEdit(task)}><span className="task-title">{task.title}</span><span className="task-meta">
           {task.dueDate && <span className={isOverdue(task) && !task.completed ? "overdue" : ""}>{niceDate(task.dueDate)}{task.dueTime ? ` · до ${task.dueTime}` : ""}</span>}
           {!task.dueDate && !child && effectiveKey(task) && <span>подзадача: {niceDate(effectiveKey(task)!.slice(0,10))}{effectiveKey(task)!.slice(11) !== "99:99" ? ` · до ${effectiveKey(task)!.slice(11)}` : ""}</span>}
-          {(task.remindAt || task.remindMinutes) && !task.reminderSentAt && !task.completed && <span>{reminderLabel(task)}</span>}
           {!task.completed && importanceOf(task) === 1 && <span className="high">Важная</span>}
           {!task.completed && importanceOf(task) === 3 && <span className="low">Низкая</span>}
           {!task.completed && isUrgent(task, tomorrow) && <span className="urgent-label">Срочно</span>}
@@ -200,9 +188,8 @@ export default function Home() {
       <form className="modal" onSubmit={save}>
         <div className="modal-head"><h2>{editing ? "Изменить задачу" : parentId ? "Новая подзадача" : "Новая задача"}</h2><button type="button" className="close" aria-label="Закрыть" onClick={() => setDialog(false)}><X size={28} strokeWidth={2.4}/></button></div>
         <label>Название<input autoFocus value={title} onChange={e => setTitle(e.target.value)} maxLength={240} required/></label>
-        <div className="date-field"><div className="field-label">Срок</div><DateChoice key={editing?.id ?? "new"} value={dueDate} onChange={value => { setDueDate(value); if (!value) { setDueTime(""); setRemindMinutes(""); } }}/></div>
+        <div className="date-field"><div className="field-label">Срок</div><DateChoice key={editing?.id ?? "new"} value={dueDate} onChange={value => { setDueDate(value); if (!value) setDueTime(""); }}/></div>
         {dueDate && <label>До какого времени<input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}/></label>}
-        <ReminderChoice key={editing?.id ?? "new"} remindAt={remindAt} remindMinutes={remindMinutes} dueDate={dueDate} onChange={(at, minutes) => { setRemindAt(at); setRemindMinutes(minutes); }}/>
         <button type="button" className="mobile-advanced-toggle" aria-expanded={showAdvanced} onClick={() => setShowAdvanced(!showAdvanced)}>Важность · {importance === 1 ? "Важная" : importance === 3 ? "Низкая" : "Обычная"}{manualUrgent && " · Срочно"} <ChevronDown size={17}/></button>
         <div className="advanced-fields" data-open={showAdvanced}>
           <div className="importance-field"><div className="field-label">Важность</div><div className="importance-options">{[["Низкая", 3], ["Обычная", 2], ["Важная", 1]].map(([label, value]) => <button type="button" key={label} className={importance === value ? "selected" : ""} onClick={() => { setImportance(Number(value)); if (value !== 1) setManualUrgent(false); }}>{label}</button>)}</div>{importance === 1 && <label className="urgent-control"><input type="checkbox" checked={manualUrgent} onChange={e => setManualUrgent(e.target.checked)}/> Срочно вручную</label>}{importance === 1 && parentId && dueDate && dueDate <= tomorrow && <div className="urgency-note">Срочно из-за близкого срока подзадачи</div>}</div>

@@ -23,3 +23,10 @@ export const migrationClaims = sqliteTable("migration_claims", {
   userId: text("user_id").notNull(),
   claimedAt: text("claimed_at").notNull(),
 });
+
+export const reminderSettings = sqliteTable("reminder_settings", {
+  userId: text("user_id").primaryKey(),
+  scope: text("scope", { enum: ["all", "urgent", "off"] }).notNull(),
+  leadMinutes: integer("lead_minutes").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
