@@ -28,7 +28,7 @@ For a production build, run `npm run build`. D1 and Telegram features require bi
 
 ## Telegram setup
 
-The bot webhook is implemented at `/api/telegram/webhook`. Set `TELEGRAM_BOT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and `REMINDER_JOB_SECRET` in the hosting environment, then register the deployed HTTPS webhook with Telegram. Store the token and secrets as hosting secrets, never in Git. The Mini App verifies Telegram `initData` on the server before accessing tasks. Tasks are stored in Cloudflare D1, scoped to the Telegram user ID.
+The bot webhook is implemented at `/api/telegram/webhook`. Set `TELEGRAM_BOT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and `REMINDER_JOB_SECRET` in the hosting environment, then register the deployed HTTPS webhook with Telegram. The reminder job checks that Telegram delivers both `message` and `callback_query` updates and repairs the webhook subscription when needed. Store the token and secrets as hosting secrets, never in Git. The Mini App verifies Telegram `initData` on the server before accessing tasks. Tasks are stored in Cloudflare D1, scoped to the Telegram user ID.
 
 The current bot URL and webhook Mini App URL are set in `app/api/telegram/webhook/route.ts`. Update them if you move the deployment to a new domain.
 
