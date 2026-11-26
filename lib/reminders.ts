@@ -53,11 +53,12 @@ export async function processReminders(now = new Date(), userId?: string) {
   for (const task of pending) {
     const setting = settingsByUser.get(task.userId);
     if (setting?.scope === "off" || (setting?.scope === "urgent" && !isUrgent(task, tomorrow))) continue;
-    const time = setting ? globalReminderTime(task, setting.leadMinutes) : reminderTime(task);
+    const useDeadlineRule = Boolean(setting && task.dueDate);
+    const time = useDeadlineRule ? globalReminderTime(task, setting!.leadMinutes) : reminderTime(task);
     // A delayed scheduler should still deliver recent reminders instead of silently losing them.
-    if (!time || now.getTime() < time.sendAt || now.getTime() - time.sendAt > 24 * 60 * 60_000 || (setting && time.deadline && now.getTime() >= time.deadline)) continue;
+    if (!time || now.getTime() < time.sendAt || now.getTime() - time.sendAt > 24 * 60 * 60_000 || (useDeadlineRule && time.deadline && now.getTime() >= time.deadline)) continue;
     const claimedAt = now.toISOString();
-    const unchangedReminder = setting
+    const unchangedReminder = useDeadlineRule
       ? and(eq(tasks.dueDate, task.dueDate!), task.dueTime ? eq(tasks.dueTime, task.dueTime) : isNull(tasks.dueTime), eq(tasks.priority, task.priority), task.parentId ? eq(tasks.parentId, task.parentId) : isNull(tasks.parentId))
       : task.remindAt
       ? eq(tasks.remindAt, task.remindAt)
@@ -66,7 +67,7 @@ export async function processReminders(now = new Date(), userId?: string) {
     if (!claimed) continue;
     try {
       const deadline = deadlineLabel(task, now);
-      const text = `${!setting && task.remindAt ? "⏰ Напоминание" : "⏳ Скоро срок"}\n\n<b>${escapeHtml(task.title)}</b>${deadline ? `\nСрок: ${deadline}` : ""}`;
+      const text = `${!useDeadlineRule && task.remindAt ? "⏰ Напоминание" : "⏳ Скоро срок"}\n\n<b>${escapeHtml(task.title)}</b>${deadline ? `\nСрок: ${deadline}` : ""}`;
       const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
