@@ -18,8 +18,11 @@ type Update = {
   callback_query?: { id?: string; data?: string; from?: { id?: number }; message?: { message_id?: number; chat?: Chat } };
 };
 type Setting = typeof reminderSettings.$inferSelect;
+type Scope = Setting["scope"];
+type ActiveScope = Exclude<Scope, "off">;
 const keyboard = { keyboard: [[{ text: "Открыть задачи", web_app: { url: appUrl } }, { text: "Настроить" }], [{ text: "Ближайшие сроки" }]], resize_keyboard: true, is_persistent: true };
 const leadOptions = [[5, "5 мин"], [15, "15 мин"], [30, "30 мин"], [60, "1 час"], [180, "3 часа"], [1440, "1 день"]] as const;
+const scopeLabels: Record<Scope, string> = { all: "Все", urgent: "Срочные", urgent_important: "Срочные + важные", off: "Выключить напоминания" };
 
 function send(chatId: number, text: string, replyMarkup: object = keyboard) {
   return Response.json({ method: "sendMessage", chat_id: chatId, text, reply_markup: replyMarkup });
@@ -30,27 +33,39 @@ async function getSetting(userId: string) {
   return setting;
 }
 
-function settingsMarkup(setting?: Setting) {
-  const scopeButton = (label: string, scope: Setting["scope"]) => ({ text: `${setting?.scope === scope ? "✓ " : ""}${label}`, callback_data: `reminders:scope:${scope}` });
-  const leadButton = ([minutes, label]: typeof leadOptions[number]) => ({ text: `${setting?.leadMinutes === minutes ? "✓ " : ""}За ${label}`, callback_data: `reminders:lead:${minutes}` });
-  return { inline_keyboard: [
-    [scopeButton("Все", "all"), scopeButton("Срочные", "urgent"), scopeButton("Выкл.", "off")],
-    leadOptions.slice(0, 3).map(leadButton),
-    leadOptions.slice(3).map(leadButton),
-    [{ text: "Открыть задачи", web_app: { url: appUrl } }],
-  ] };
-}
-
-function settingsText(setting?: Setting) {
-  if (!setting) return "Напоминания\n\nПока действуют прежние напоминания. Выберите задачи и время до срока.";
-  const scope = { all: "Все задачи", urgent: "Только срочные", off: "Выключены" }[setting.scope];
-  const lead = leadOptions.find(([minutes]) => minutes === setting.leadMinutes)?.[1] ?? "1 час";
-  return `Напоминания\n\nЗадачи: ${scope}\nКогда: за ${lead} до срока`;
+function settingsResponse(chatId: number, text: string, replyMarkup: object, messageId?: number) {
+  return Response.json({ method: messageId ? "editMessageText" : "sendMessage", chat_id: chatId, ...(messageId ? { message_id: messageId } : {}), text, reply_markup: replyMarkup });
 }
 
 async function settingsMessage(chatId: number, userId: string, messageId?: number) {
   const setting = await getSetting(userId);
-  return Response.json({ method: messageId ? "editMessageText" : "sendMessage", chat_id: chatId, ...(messageId ? { message_id: messageId } : {}), text: settingsText(setting), reply_markup: settingsMarkup(setting) });
+  const current = setting?.scope === "off" ? "выключены" : setting ? `${scopeLabels[setting.scope]}, за ${leadOptions.find(([minutes]) => minutes === setting.leadMinutes)?.[1] ?? "1 час"}` : "прежние настройки задач";
+  const scopes: Scope[] = ["all", "urgent", "urgent_important", "off"];
+  return settingsResponse(chatId, `Напоминания\n\nШаг 1 из 2 · Какие задачи напоминать?\n\nСейчас: ${current}`, {
+    inline_keyboard: scopes.map(scope => [{ text: `${setting?.scope === scope ? "✓ " : ""}${scopeLabels[scope]}`, callback_data: `reminders:scope:${scope}` }]),
+  }, messageId);
+}
+
+async function leadMessage(chatId: number, userId: string, scope: ActiveScope, messageId: number) {
+  const setting = await getSetting(userId);
+  return settingsResponse(chatId, `Напоминания\n\nВыбрано: ${scopeLabels[scope]}\nШаг 2 из 2 · За сколько до срока напомнить?`, {
+    inline_keyboard: [
+      ...leadOptions.map(([minutes, label]) => [{ text: `${setting?.scope === scope && setting.leadMinutes === minutes ? "✓ " : ""}За ${label}`, callback_data: `reminders:lead:${scope}:${minutes}` }]),
+      [{ text: "← Назад", callback_data: "reminders:show" }],
+    ],
+  }, messageId);
+}
+
+async function saveSetting(userId: string, scope: Scope, leadMinutes: number) {
+  const updatedAt = new Date().toISOString();
+  await getDb().insert(reminderSettings).values({ userId, scope, leadMinutes, updatedAt })
+    .onConflictDoUpdate({ target: reminderSettings.userId, set: { scope, leadMinutes, updatedAt } });
+}
+
+function savedMessage(chatId: number, scope: Scope, leadMinutes: number, messageId: number) {
+  const lead = leadOptions.find(([minutes]) => minutes === leadMinutes)?.[1] ?? "1 час";
+  const text = scope === "off" ? "Напоминания выключены." : `Напоминания настроены\n\nЗадачи: ${scopeLabels[scope]}\nКогда: за ${lead} до срока`;
+  return settingsResponse(chatId, text, { inline_keyboard: [[{ text: "Изменить настройки", callback_data: "reminders:show" }]] }, messageId);
 }
 
 async function answerCallback(id: string, text?: string) {
@@ -70,18 +85,32 @@ export async function POST(request: Request) {
   if (callback?.id && callback.from?.id && callback.message?.chat?.type === "private" && callback.message.chat.id === callback.from.id && callback.message.message_id) {
     const userId = `tg:${callback.from.id}`;
     const data = callback.data ?? "";
-    if (data === "reminders:show" || /^reminders:(scope:(all|urgent|off)|lead:(5|15|30|60|180|1440))$/.test(data)) {
+    const scopeMatch = /^reminders:scope:(all|urgent|urgent_important|off)$/.exec(data);
+    const leadMatch = /^reminders:lead:(all|urgent|urgent_important):(5|15|30|60|180|1440)$/.exec(data);
+    if (data === "reminders:show" || scopeMatch || leadMatch || /^reminders:lead:(5|15|30|60|180|1440)$/.test(data)) {
       try {
-        if (data !== "reminders:show") {
-          const old = await getSetting(userId);
-          const [, kind, value] = data.split(":");
-          const scope = kind === "scope" ? value as Setting["scope"] : old?.scope === "off" ? "all" : old?.scope ?? "all";
-          const leadMinutes = kind === "lead" ? Number(value) : old?.leadMinutes ?? 60;
-          await getDb().insert(reminderSettings).values({ userId, scope, leadMinutes, updatedAt: new Date().toISOString() })
-            .onConflictDoUpdate({ target: reminderSettings.userId, set: { scope, leadMinutes, updatedAt: new Date().toISOString() } });
+        const chatId = callback.message.chat.id;
+        const messageId = callback.message.message_id;
+        if (scopeMatch) {
+          const scope = scopeMatch[1] as Scope;
+          if (scope === "off") {
+            const old = await getSetting(userId);
+            await saveSetting(userId, "off", old?.leadMinutes ?? 60);
+            await answerCallback(callback.id);
+            return savedMessage(chatId, "off", old?.leadMinutes ?? 60, messageId);
+          }
+          await answerCallback(callback.id);
+          return leadMessage(chatId, userId, scope, messageId);
+        }
+        if (leadMatch) {
+          const scope = leadMatch[1] as ActiveScope;
+          const leadMinutes = Number(leadMatch[2]);
+          await saveSetting(userId, scope, leadMinutes);
+          await answerCallback(callback.id);
+          return savedMessage(chatId, scope, leadMinutes, messageId);
         }
         await answerCallback(callback.id);
-        return settingsMessage(callback.message.chat.id, userId, callback.message.message_id);
+        return settingsMessage(chatId, userId, messageId);
       } catch {
         await answerCallback(callback.id, "Не удалось сохранить. Попробуйте ещё раз.");
         return new Response(null, { status: 200 });

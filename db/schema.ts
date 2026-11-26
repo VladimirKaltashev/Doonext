@@ -26,7 +26,7 @@ export const migrationClaims = sqliteTable("migration_claims", {
 
 export const reminderSettings = sqliteTable("reminder_settings", {
   userId: text("user_id").primaryKey(),
-  scope: text("scope", { enum: ["all", "urgent", "off"] }).notNull(),
+  scope: text("scope", { enum: ["all", "urgent", "urgent_important", "off"] }).notNull(),
   leadMinutes: integer("lead_minutes").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

@@ -52,7 +52,7 @@ export async function processReminders(now = new Date(), userId?: string) {
   let failed = 0;
   for (const task of pending) {
     const setting = settingsByUser.get(task.userId);
-    if (setting?.scope === "off" || (setting?.scope === "urgent" && !isUrgent(task, tomorrow))) continue;
+    if (setting?.scope === "off" || (setting?.scope === "urgent" && !isUrgent(task, tomorrow)) || (setting?.scope === "urgent_important" && !isUrgent(task, tomorrow) && task.priority !== 1)) continue;
     const useDeadlineRule = Boolean(setting && task.dueDate);
     const time = useDeadlineRule ? globalReminderTime(task, setting!.leadMinutes) : reminderTime(task);
     // A delayed scheduler should still deliver recent reminders instead of silently losing them.
